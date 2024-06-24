@@ -2,12 +2,15 @@ This is Android Image Cropper Plugin for Godot 4.
 
 Copy the folder  "\addons\GodotImageCropperPlugin" inside the "Demo - Godot Android Image Cropper" directory to your project and activate the plugin.
 
-Please download the Demo project and open it in Godot to learn how to use it. It is pretty simple actually.
+Please download the Demo project and open it in Godot to learn how to use it. It is pretty simple and straightforward actually.
 
 This plugin was made using:
 
 CanHub/Android-Image-Cropper (For cropping the image)
 & bumptech/glide (For loading the image)
 
+This is my first commit and will be updated.
+
+- Mc' Oswel J.S
 
 
