@@ -7,7 +7,7 @@ Please download the Demo project and open it in Godot to learn how to use it. It
 This plugin was made using:
 
 CanHub/Android-Image-Cropper (For cropping the image)
-& bumptech/glide (For loading to image to bytep[])
+& bumptech/glide (For loading the image)
 
 
 
