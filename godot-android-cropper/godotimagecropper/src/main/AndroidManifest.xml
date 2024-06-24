@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <meta-data
+            android:name="org.godotengine.plugin.v2.${godotPluginName}"
+            android:value="${godotPluginPackageName}.${godotPluginName}"/>
+        <activity
+                android:name="com.canhub.cropper.CropImageActivity"
+                android:theme="@style/Base.Theme.AppCompat"
+                />
+    </application>
+
+</manifest>

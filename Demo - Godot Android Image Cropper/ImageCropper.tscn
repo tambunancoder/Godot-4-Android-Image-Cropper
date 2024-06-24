@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cna86le1vi5y4"]
+
+[ext_resource type="Script" path="res://addons/GodotImageCropperPlugin/GodotImageCropper.gd" id="1_2jn8k"]
+
+[node name="ImageCropper" type="Node"]
+script = ExtResource("1_2jn8k")
