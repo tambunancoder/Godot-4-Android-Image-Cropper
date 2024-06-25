@@ -4,6 +4,7 @@ extends Node
 
 const IMAGE_LOADED: String = "image_loaded";
 const PLUGIN_SINGLETON_NAME: String = "GodotImageCropperPlugin"
+const USER_CANCELLED = "user_cancelled"
 const SHAPE_OVAL = "OVAL"
 const SHAPE_RECTANGLE = "RECTANGLE"
 const COMPRESSED_JPG = "JPEG"
@@ -11,6 +12,7 @@ const COMPRESSED_PNG = "PNG"
 const COMPRESSED_WEBP = "WEBP"
 var compressed_format = "PNG"
 signal image_data
+signal user_cancelled_operation
 
 var _plugin_singleton: Object
 func _ready() -> void:
@@ -74,7 +76,10 @@ func setAspectRatio (x : int, y:int):
 
 func _connect_signals() -> void:
 	_plugin_singleton.connect(IMAGE_LOADED, on_image_loaded)
+	_plugin_singleton.connect(USER_CANCELLED, on_user_cancelled)
 
+func on_user_cancelled():
+	user_cancelled_operation.emit()
 
 func on_image_loaded(dick):
-	emit_signal("image_data",dick)
+	image_data.emit(dick)

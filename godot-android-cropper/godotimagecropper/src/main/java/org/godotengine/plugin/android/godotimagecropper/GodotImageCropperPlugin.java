@@ -1,14 +1,14 @@
-//
-// © 2024-present https://github.com/cengiz-pz
-//
 
 package org.godotengine.plugin.android.godotimagecropper;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
 
@@ -22,7 +22,6 @@ import com.bumptech.glide.request.RequestOptions;
 import com.bumptech.glide.request.target.SizeReadyCallback;
 import com.bumptech.glide.request.target.Target;
 import com.bumptech.glide.request.transition.Transition;
-import com.canhub.cropper.CropImageActivity;
 import com.canhub.cropper.CropImageContract;
 import com.canhub.cropper.CropImageContractOptions;
 import com.canhub.cropper.CropImageOptions;
@@ -42,17 +41,14 @@ public class GodotImageCropperPlugin extends GodotPlugin {
     private static final String CLASS_NAME = GodotImageCropperPlugin.class.getSimpleName();
     private static final String LOG_TAG = "GODOT IMAGE CROPPER LOG: ";
     private static final String IMAGE_LOADED = "image_loaded";
+    private static final String USER_CANCELLED = "user_cancelled";
     private Activity activity;
     private boolean have_permission = false;
     private static final int CROP_IMAGE_RESULT = 7;
     private CropImageOptions options;
     private CropImageContract contract;
-    /**
-     * Base constructor passing a {@link Godot} instance through which the plugin can access Godot's
-     * APIs and lifecycle events.
-     *
-     * @param godot
-     */
+    private static final int PERMISSION_REQUEST = 9;
+
     public GodotImageCropperPlugin(Godot godot) {
         super(godot);
     }
@@ -67,11 +63,10 @@ public class GodotImageCropperPlugin extends GodotPlugin {
         super.onMainActivityResult(requestCode, resultCode, data);
         if (requestCode == CROP_IMAGE_RESULT) {
             CropImageView.CropResult result = contract.parseResult(resultCode, data);
-            if (result.isSuccessful()){
-                Log.d(LOG_TAG, "Yeahh sucesss");
+            if (result.isSuccessful()) {
                 glideIt(result.getUriContent());
-            }else{
-                Log.e(LOG_TAG, "Nope failed");
+            } else {
+                emitSignal(USER_CANCELLED);
             }
         }
     }
@@ -94,16 +89,16 @@ public class GodotImageCropperPlugin extends GodotPlugin {
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
                         Bitmap bm = Bitmap.createScaledBitmap(resource, resource.getWidth(), resource.getHeight(), false);
                         ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        if (options.outputCompressFormat == Bitmap.CompressFormat.JPEG){
-                            bm.compress(Bitmap.CompressFormat.JPEG, 75,out);
-                        }else if (options.outputCompressFormat == Bitmap.CompressFormat.PNG){
-                            bm.compress(Bitmap.CompressFormat.PNG, 75,out);
-                        }else{
-                            bm.compress(Bitmap.CompressFormat.WEBP, 75,out);
+                        if (options.outputCompressFormat == Bitmap.CompressFormat.JPEG) {
+                            bm.compress(Bitmap.CompressFormat.JPEG, 75, out);
+                        } else if (options.outputCompressFormat == Bitmap.CompressFormat.PNG) {
+                            bm.compress(Bitmap.CompressFormat.PNG, 75, out);
+                        } else {
+                            bm.compress(Bitmap.CompressFormat.WEBP, 75, out);
                         }
                         byte[] picData = out.toByteArray();
                         Dictionary dick = new Dictionary();
-                        dick.put("0",picData);
+                        dick.put("0", picData);
                         emitSignal(IMAGE_LOADED, dick);
                     }
 
@@ -150,23 +145,22 @@ public class GodotImageCropperPlugin extends GodotPlugin {
                 });
     }
 
-    private byte[] bitMaptoByteArray(Bitmap bm){
+    private byte[] bitMaptoByteArray(Bitmap bm) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
-         if (options.outputCompressFormat == Bitmap.CompressFormat.JPEG){
-                 bm.compress(Bitmap.CompressFormat.JPEG, 75,stream);
-            }else if (options.outputCompressFormat == Bitmap.CompressFormat.PNG){
-                 bm.compress(Bitmap.CompressFormat.PNG, 75,stream);
-              }else{
-                 bm.compress(Bitmap.CompressFormat.WEBP, 75,stream);
-             }
+            if (options.outputCompressFormat == Bitmap.CompressFormat.JPEG) {
+                bm.compress(Bitmap.CompressFormat.JPEG, 75, stream);
+            } else if (options.outputCompressFormat == Bitmap.CompressFormat.PNG) {
+                bm.compress(Bitmap.CompressFormat.PNG, 75, stream);
+            } else {
+                bm.compress(Bitmap.CompressFormat.WEBP, 75, stream);
+            }
             stream.close();
             return stream.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
-
 
     @UsedByGodot
     public void setCropShape(String sh) {
@@ -230,12 +224,52 @@ public class GodotImageCropperPlugin extends GodotPlugin {
         }
     }
 
+    @Override
+    public void onMainRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onMainRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST) {
+            if (grantResults.length > 0) {
+                startCropImage();
+            }
+        }
+    }
+
     @UsedByGodot
     public void getImage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // requestPermissions.launch(arrayOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO, READ_MEDIA_VISUAL_USER_SELECTED))
+            if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                String[] permissions = new String[]{Manifest.permission.READ_MEDIA_IMAGES};
+                activity.requestPermissions(permissions, PERMISSION_REQUEST);
+
+            } else {
+                startCropImage();
+            }
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (activity.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
+                String[] permissions = new String[]{Manifest.permission.READ_MEDIA_IMAGES};
+                activity.requestPermissions(permissions, PERMISSION_REQUEST);
+            } else {
+                startCropImage();
+            }
+            //  requestPermissions.launch(arrayOf(READ_MEDIA_IMAGES, READ_MEDIA_VIDEO))
+        } else {
+            if (activity.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                String[] permissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE};
+                activity.requestPermissions(permissions, PERMISSION_REQUEST);
+            } else {
+                startCropImage();
+            }
+            // requestPermissions.launch(arrayOf(READ_EXTERNAL_STORAGE))
+        }
+
+
+    }
+
+    private void startCropImage() {
         contract = new CropImageContract();
         CropImageContractOptions cop = new CropImageContractOptions(Uri.EMPTY, options);
         activity.startActivityForResult(contract.createIntent(activity, cop), CROP_IMAGE_RESULT);
-
     }
 
     @NonNull
@@ -249,6 +283,7 @@ public class GodotImageCropperPlugin extends GodotPlugin {
     public Set<SignalInfo> getPluginSignals() {
         Set<SignalInfo> signals = new ArraySet<>();
         signals.add(new SignalInfo(IMAGE_LOADED, Dictionary.class));
+        signals.add(new SignalInfo(USER_CANCELLED));
         return signals;
     }
 
